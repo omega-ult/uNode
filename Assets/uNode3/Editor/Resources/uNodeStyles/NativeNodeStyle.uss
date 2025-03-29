@@ -69,7 +69,7 @@ PortView > Image {
 }
 
 .vertical-graph #node-border.flowNodeBorder {
-    border-radius: 8px;
+    border-radius: 6px;
     border-left-width: 1px;
     border-right-width: 1px;
     border-top-width: 1px;

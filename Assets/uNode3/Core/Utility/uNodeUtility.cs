@@ -55,11 +55,7 @@ namespace MaxyGames.UNode {
 
 		public static bool IsProVersion {
 			get {
-#if UNODE_PRO
 				return true;
-#else
-				return false;
-#endif
 			}
 		}
 

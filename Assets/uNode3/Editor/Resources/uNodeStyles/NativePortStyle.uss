@@ -244,17 +244,17 @@ PortInputView {
 }
 
 PortInputView > #container {
-    background-color: rgba(63, 63, 63, 0.8);
+    background-color: rgba(63, 63, 63, 0.5);
     flex-direction: row;
     align-items: center;
     padding-left: 1px;
     margin-right: 12px;
     border-left-width: 0px;
-    border-top-width: 1px;
-    border-right-width: 4px;
-    border-bottom-width: 1px;
+    border-top-width: 0px;
+    border-right-width: 0px;
+    border-bottom-width: 0px;
     border-color: rgba(25, 25, 25, 0.8);
-    border-radius: 5px;
+    border-radius: 4px;
 }
 
 PortInputView > #container.proxy {
