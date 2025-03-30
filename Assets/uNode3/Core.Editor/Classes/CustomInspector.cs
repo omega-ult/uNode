@@ -317,7 +317,9 @@ namespace MaxyGames.UNode.Editors {
 			}
 		}
 
-		public static void DrawGraphInspector(IGraph graph) {
+		public static void DrawGraphInspector(IGraph graph)
+		{
+			if (graph == null) return;
 			var graphData = graph.GraphData;
 			if(graphData.IsValidElement()) {
 				Type icon;

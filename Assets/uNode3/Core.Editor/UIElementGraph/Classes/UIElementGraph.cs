@@ -989,6 +989,19 @@ namespace MaxyGames.UNode.Editors {
 				tabElement.RemoveManipulator(tabElement.clickable);
 				tabElement.ShowIcon(uNodeEditorUtility.GetTypeIcon(tabData.owner));
 
+				// 添加中键点击事件处理
+				tabElement.RegisterCallback<MouseUpEvent>(evt => {
+					if (evt.button == 2) { // 在Unity中，中键是button 1
+						// 关闭当前标签页
+						var oldData = window.selectedTab;
+						window.tabDatas.Remove(tabData);
+						window.SaveEditorData();
+						window.ChangeEditorTab(oldData);
+						ReloadTabbar();
+						evt.StopPropagation();
+					}
+				});
+
 				tabElement.AddManipulator(new DraggableElementManipulator() {
 					dragTitle = "Drag Tab: " + tabData.displayName,
 					getGenericData = () => {

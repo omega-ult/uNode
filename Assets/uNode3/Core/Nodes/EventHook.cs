@@ -155,6 +155,45 @@ namespace MaxyGames.UNode.Nodes {
 						}
 						e.eventInfo.AddEventHandler(e.instance, m_Delegate);
 					}
+				} else if(val is Delegate delegateVal) {
+					// 直接处理 Delegate 类型
+					if(m_Delegate == null) {
+						var method = delegateVal.GetType().GetMethod("Invoke");
+						var type = method.ReturnType;
+						if(type == typeof(void)) {
+							m_Delegate = CustomDelegate.CreateActionDelegate((obj) => {
+								if(nodeObject == null)
+									return;
+								if(obj != null && parameters.Count == obj.Length) {
+									for(int i = 0; i < obj.Length; i++) {
+										flow.SetPortData(parameters[i].port, obj[i]);
+									}
+								}
+								flow.TriggerParallel(body);
+							}, method.GetParameters().Select(i => i.ParameterType).ToArray());
+						} else {
+							var types = method.GetParameters().Select(i => i.ParameterType).ToList();
+							types.Add(type);
+							m_Delegate = CustomDelegate.CreateFuncDelegate((obj) => {
+								if(nodeObject == null)
+									return null;
+								if(obj != null && parameters.Count == obj.Length) {
+									for(int i = 0; i < obj.Length; i++) {
+										flow.SetPortData(parameters[i].port, obj[i]);
+									}
+								}
+								flow.TriggerParallel(body);
+								JumpStatement js = flow.jumpStatement;
+								if(js == null || js.jumpType != JumpStatementType.Return) {
+									throw new Exception("No return value");
+								}
+								return js.value;
+							}, types.ToArray());
+						}
+						m_Delegate = ReflectionUtils.ConvertDelegate(m_Delegate, delegateVal.GetType());
+					}
+					// 将我们的委托添加到目标委托
+					Delegate.Combine(delegateVal, m_Delegate);
 				} else if(val is UnityEventBase) {
 					var method = val.GetType().GetMethod("AddListener");
 					if(m_Delegate == null) {
@@ -190,6 +229,9 @@ namespace MaxyGames.UNode.Nodes {
 					if(e.eventInfo != null) {
 						e.eventInfo.RemoveEventHandler(e.instance, m_Delegate);
 					}
+				} else if(val is Delegate delegateVal) {
+					// 从目标委托中移除我们的委托
+					Delegate.Remove(delegateVal, m_Delegate);
 				} else if(val is UnityEventBase) {
 					var method = val.GetType().GetMethod("RemoveListener");
 					method.InvokeOptimized(val, new object[] { m_Delegate });
