@@ -24,23 +24,56 @@ namespace MaxyGames.OdinSerializer.Utilities.Editor
 
         static OdinBuildAutomation()
         {
-            var odinSerializerDir = new DirectoryInfo(typeof(AssemblyImportSettingsUtilities).Assembly.GetAssemblyDirectory())
-                .Parent.FullName.Replace('\\', '/').Replace("//", "/").TrimEnd('/');
-
-            var unityDataPath = Environment.CurrentDirectory.Replace("\\", "//").Replace("//", "/").TrimEnd('/');
-
-            if (!odinSerializerDir.StartsWith(unityDataPath))
+            // 使用PackageInfo API获取包的正确路径
+            var assembly = typeof(AssemblyImportSettingsUtilities).Assembly;
+            string assemblyPath = new Uri(assembly.CodeBase).LocalPath;
+            string packageRelativePath = "";
+            
+            // 尝试从程序集路径中提取包信息
+            if (assemblyPath.Contains("Packages"))
             {
-                throw new FileNotFoundException("The referenced Odin Serializer assemblies are not inside the current Unity project - cannot use build automation script!");
+                int packagesIndex = assemblyPath.IndexOf("Packages");
+                string pathAfterPackages = assemblyPath.Substring(packagesIndex + "Packages".Length + 1);
+                
+                // 提取包名部分
+                int firstSlashIndex = pathAfterPackages.IndexOf('/');
+                if (firstSlashIndex > 0)
+                {
+                    string packageName = pathAfterPackages.Substring(0, firstSlashIndex);
+                    
+                    // 使用Unity包API获取完整路径
+                    var packageInfo = UnityEditor.PackageManager.PackageInfo.FindForAssetPath($"Packages/{packageName}");
+                    if (packageInfo != null)
+                    {
+                        // 使用包的正确路径
+                        packageRelativePath = $"Packages/{packageInfo.name}";
+                    }
+                }
             }
+            
+            // 如果无法通过包API获取，则回退到原始方法
+            if (string.IsNullOrEmpty(packageRelativePath))
+            {
+                var odinSerializerDir = new DirectoryInfo(assembly.GetAssemblyDirectory())
+                    .Parent.FullName.Replace('\\', '/').Replace("//", "/").TrimEnd('/');
 
-            odinSerializerDir = odinSerializerDir.Substring(unityDataPath.Length).TrimStart('/');
+                var unityDataPath = Environment.CurrentDirectory.Replace("\\", "//").Replace("//", "/").TrimEnd('/');
 
-            EditorAssemblyPath    = odinSerializerDir + "/EditorOnly/MaxyGames.OdinSerializer.dll";
-            AOTAssemblyPath       = odinSerializerDir + "/AOT/MaxyGames.OdinSerializer.dll";
-            JITAssemblyPath       = odinSerializerDir + "/JIT/MaxyGames.OdinSerializer.dll";
-            GenerateAssembliesDir = odinSerializerDir + "/Generated";
+                if (!odinSerializerDir.StartsWith(unityDataPath))
+                {
+                    throw new FileNotFoundException("The referenced Odin Serializer assemblies are not inside the current Unity project - cannot use build automation script!");
+                }
 
+                odinSerializerDir = odinSerializerDir.Substring(unityDataPath.Length).TrimStart('/');
+                packageRelativePath = odinSerializerDir;
+            }
+            
+            // 使用获取到的包路径构建最终路径
+            EditorAssemblyPath    = packageRelativePath + "/EditorOnly/MaxyGames.OdinSerializer.dll";
+            AOTAssemblyPath       = packageRelativePath + "/AOT/MaxyGames.OdinSerializer.dll";
+            JITAssemblyPath       = packageRelativePath + "/JIT/MaxyGames.OdinSerializer.dll";
+            GenerateAssembliesDir = packageRelativePath + "/Generated";
+            
             if  (!File.Exists(EditorAssemblyPath))  throw new FileNotFoundException("Make sure all release configurations specified in the Visual Studio project are built.", EditorAssemblyPath);
             else if (!File.Exists(AOTAssemblyPath)) throw new FileNotFoundException("Make sure all release configurations specified in the Visual Studio project are built.", AOTAssemblyPath);
             else if (!File.Exists(JITAssemblyPath)) throw new FileNotFoundException("Make sure all release configurations specified in the Visual Studio project are built.", JITAssemblyPath);
